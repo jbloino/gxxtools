@@ -15,7 +15,7 @@ stage = 0
 paths = {
     'gxxcfg': None,
     'hpcini': None,
-    'rcpath': None,
+    'rcfile': None,
     'gxxver': None,
 }
 

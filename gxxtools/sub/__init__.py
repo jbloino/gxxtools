@@ -195,7 +195,7 @@ def parse_options(parser: argparse.ArgumentParser) -> tp.Dict[str, tp.Any]:
         'prtinfo': argopts.prtinfo,
         'nojob': argopts.nojob,
     }
-    
+
     # Query options
     # ^^^^^^^^^^^^^
     # Query options are expected to exit after result.
@@ -650,11 +650,6 @@ def main():
 
     # Nodes/Architecture specification
     # --------------------------------
-    _path = os.path.join(gtpar.home, gtpar.files['hpcini'])
-    if os.path.exists(_path):
-        gtpar.paths['hpcini'] = _path
-    else:
-        gtpar.paths['hpcini'] = gtini.get_path('hpcconfig', miss_ok=False)
     if not os.path.exists(gtpar.paths['hpcini']):
         print('ERROR: Cannot find the HPC nodes specification file.')
         sys.exit(1)

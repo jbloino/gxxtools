@@ -355,8 +355,8 @@ def srv_info(what: str, cfg_file: tp.Optional[str] = None
             res = res == 'queues'
         elif query in ('noqueues', 'dispatch', 'central'):
             res = res == 'central'
-    elif query in ('local', 'runlocal'):
-        res = config.getboolean(_SEC_SRV, 'runlocal', fallback=False)
+    elif query in ('local', 'runlocal', 'localrun'):
+        res = config.getboolean(_SEC_SRV, 'localrun', fallback=False)
     elif query in ('clean', 'cleancmd', 'cleanscratch', 'rmscratch'):
         res = config.get(_SEC_SRV, 'cleanscratch', fallback=None)
         if res is not None:

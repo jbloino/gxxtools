@@ -22,6 +22,8 @@ def load_rc():
         gt_rc_file = _RC_PATH
     elif os.path.exists(_ALT_RC_PATH):
         gt_rc_file = _ALT_RC_PATH
+    else:
+        gt_rc_file = None
     if gt_rc_file is None:
         print(f'Missing configuration file.  Creating template in {_RC_PATH}.')
         if not os.path.exists(_RC_DIR):
@@ -60,7 +62,7 @@ gxx_versions = /home/user/gxxversions_example.ini
     while _secok is None:
         for section in config.sections():
             for addr in section.split(','):
-                pattern = addr.strip().replace('.', r'\.').replace('*', r'\w+')
+                pattern = addr.strip().replace('.', r'\.').replace('*', r'.+')
                 if re.match(pattern, gtpar.server['headaddr']):
                     _secok = section
                     break

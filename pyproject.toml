@@ -35,4 +35,4 @@ gxx_sub = "gxxtools.sub:main"
 Repository = "https://github.com/jbloino/gxxtools.git"
 
 [tool.setuptools]
-packages = ["gxxtools", "gxxtools.sub"]
+packages = ["gxxtools", "gxxtools.*"]

@@ -118,10 +118,11 @@ def gxx_parse_versions(gconf: ConfigParser,
                 sec, 'GDir', fallback=sec.split('.')[0].lower())
             # Machine architectures
             res = gconf.get(sec, 'Machs', fallback=None)
-            if res.strip() == ' ':
-                res = None
             if res is not None:
-                res = [item.strip() for item in res.split(',')]
+                if not res.strip():
+                    res = None
+                else:
+                    res = [item.strip() for item in res.split(',')]
             gxx_versions[key]['mach'] = res
             # Gaussian version label
             if 'Name' in data:

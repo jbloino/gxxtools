@@ -135,7 +135,7 @@ Information on the server and the HPC configuration.
     central:::
         The infrastructure dispatches itself the job on the hardware based on the requirements.
 
-`local`::
+`localrun`::
     (_bool_ | *default*: no)
     The job is expected to run purely in local, including the output.
     This is commonly used on large-scale HPC infrastructures to avoid networks congestion.

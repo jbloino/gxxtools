@@ -117,4 +117,5 @@ gxx_versions = /home/user/gxxversions_example.ini
     gtpar.server['nodestype'] = gtini.srv_info('jobtype')
     gtpar.server['submitter'] = gtini.srv_info('submitter')
     gtpar.server['deltmpcmd'] = gtini.srv_info('cleanscratch')
+    gtpar.server['runlocal'] = gtini.srv_info('runlocal')
     gtpar.stage = 2

@@ -772,7 +772,6 @@ ERROR: Too many processors required for the available resources.
             cpfrom += fmt_from.format(data, WORKDIR)
     # Build Submitter job
     # -------------------
-    run_local = gtini.srv_info('runlocal')
     run_parallel = multi_gjf and options['multijob'] == 'parallel'
     wtime = options['qinfo'].get('walltime', '')
     if gtpar.server['submitter'] == 'qsub':
@@ -788,7 +787,7 @@ ERROR: Too many processors required for the available resources.
                              gjf_files, options['logfiles'],
                              options['gxx_cmds'], options['gxx_exedir'],
                              options['gxx'], WORKDIR, options['tmpdir'],
-                             run_local, run_parallel,
+                             gtpar.server['runlocal'], run_parallel,
                              jobaddres=job_extra_res,
                              jobaddcmd=job_extra_cmd,
                              jobwtime=wtime, jobemail=options['mailto'],

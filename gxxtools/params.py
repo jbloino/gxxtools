@@ -31,7 +31,8 @@ server = {
     'platform': None,
     'nodestype': None,
     'submitter': None,
-    'deltmpcmd': None
+    'deltmpcmd': None,
+    'runlocal': False
 }
 
 nodes_info = None

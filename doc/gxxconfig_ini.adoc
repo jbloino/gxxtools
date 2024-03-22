@@ -1,0 +1,180 @@
+= Configuration file gxxconfig.ini
+:email: julien.bloino@sns.it
+:revnumber: 0.1.0
+:revremark: Description of the new format
+:toc: left
+:toclevels: 1
+:icons: font
+:stem:
+:pygments-style: native
+
+== Introduction
+
+The file contains configuration information primarily on the working of the HPC infrastructure:
+
+* Submission policy and tools
+* Gaussian installation
+
+The structure is that of a INI configuration file,
+
+[source, ini]
+----
+[section]
+option = value
+# comment
+----
+
+The parser supports format specification fields to be resolved directly when the file is parsed.
+Ex:
+
+* `${keyword}`: the field is resolved with the value of `keyword` in the same block/section.
+* `${SECTION:keyword}`: the field is resolved with the value of `keyword` in section `SECTION`.
+
+[NOTE]
+====
+_bool_ options can be provided as True/False, 1/0 or yes/no
+====
+
+== Fields
+
+The fields are divided in a number of sections, described below
+
+=== `PATHS`
+
+Provide generic path information.
+
+`gxxroot`::
+    (_str_) General root directory where Gaussian versions are installed.
+
+`gxxrepo`::
+    (_str_) Repository directory where Gaussian source archives can be found.
++
+--
+NOTE: Only used for compilation purposes.
+
+--
+
+`workingroot`::
+    (_str_) Root directory where Gaussian working trees are stored.
+
+`compiler_root`::
+    (_str_) Root directory where the NVidia/PGI compiler(s) are installed.
+
+`compiler_path`::
+    (_str_) Path to compiler base directory, which can be generated from other information. +
+    Ex: `compiler_path = ${compiler_root}/Linux_${COMPILER:arch}/${COMPILER:version}`
+
+=== `QUEUE`
+
+General information of the queue parameters.
+
+`default`::
+    (_str_) Default queue to be used if none provided.
+`manual`::
+    (_bool_ | *default*: yes)
+    Queue can/must be defined manually.
+    If false, the queue is expected to not be provided.
+`walltime`::
+    (_bool_ | *default*: no)
+    A walltime must be explicitly provided.
+    The expected format is "```HH:MM:SS```".
+
+
+=== `COMPILER`
+
+Information on the compiler to use and the version.
+
+`name`::
+    (_str_)
+    Name of the compiler, used to properly set the environment variables. +
+    Expected values: "`PGI`", "`NVHPC`"
+`version`::
+    (_str_)
+    Version of the compiler to use. +
+    Ex: "`21.7`"
+`arch`::
+    (_str_)
+    Compiler architecture version if relevant, normally used only for the compiler path resolution.
+`set_env`::
+    (_bool_)
+    If true, the environment variables of the compiler must be explicitly set by the library system.
+
+
+=== `SERVER``
+
+Information on the server and the HPC configuration.
+
+`alias`::
+    (_str_)
+    Alias of the server for internal use. +
+    *Recognized values*: "`avogadro`", "`village`", "`metacentrum`"
+`email`::
+    (_str_)
+    Email adress, as partially resolved name.
+    Supported runtime fields:
+[horizontal]
+    `{user}`:::
+        replaced by the username.
+
+`submitter`::
+    (_str_)
+    Submitter program.
+    Supported values:
+[horizontal]
+    qsub:::
+        PBS-compatible qsub commmands.
+
+`jobtype`::
+    (_str_)
+    Type of job submission.
+    Supported values:
+[horizontal]
+    queues:::
+        The infrastructure use separate queues to run jobs, generally based on the type of hardware.
+        Users are expected to provide the queue they want to use.
+    central:::
+        The infrastructure dispatches itself the job on the hardware based on the requirements.
+
+`local`::
+    (_bool_ | *default*: no)
+    The job is expected to run purely in local, including the output.
+    This is commonly used on large-scale HPC infrastructures to avoid networks congestion.
+
+`cleanscratch`::
+    (_str_)
+    Command to clean scratch.
+    If not provided, scratch is supposed to be cleaned explicitly (same as "`auto`").
+
+
+=== `GAUSSIAN`
+
+Information on the Gaussian usage policy and compilation parameters.
+
+`default`::
+    (_str_)
+    Default Gaussian version, as a keyword compatible con `gxxversions.ini`.
+`use_path`::
+    (_bool_ | *default*: yes)::
+    By default, use paths and environment variables to set up the Gaussian execution environment.
++
+--
+NOTE: This option is incompatible with `use_module`.
+
+--
+`use_module`::
+    (_bool_ | *default*: no)::
+    By default, use modules provided by the HPC infrastructure.
++
+--
+NOTE: This option is incompatible with `use_path`.
+
+--
+`build_archs`::
+    (_str_)
+    Supported build architectures recognized by Gaussian, separated by commas.
+`build_XXX`::
+    (_str_)
+    Node specification where architecture "```XXX```" should be compiled, as a family name compatible with `hpcconfig.ini`, given as "`installation_directory | family`".
+
+
+    

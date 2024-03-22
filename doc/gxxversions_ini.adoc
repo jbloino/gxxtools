@@ -1,0 +1,186 @@
+= Configuration file gxxversions.ini
+:email: julien.bloino@sns.it
+:revnumber: 0.1.0
+:revremark: Description of the new format
+:toc: left
+:toclevels: 1
+:icons: font
+:stem:
+:pygments-style: native
+
+== Introduction
+
+The file contains information on the versions of Gaussian (and working trees) supported on a given HPC infrastructure.
+The information should be sufficient to set up the environment, except for nodes-related specifications (e.g., paths depending on the processor architecture for hardware-specific compilations).
+
+The structure is that of a INI configuration file,
+
+[source, ini]
+----
+[section]
+option = value
+# comment
+----
+
+The parser supports format specification fields to be resolved directly when the file is parsed.
+Ex:
+
+* `${keyword}`: the field is resolved with the value of `keyword` in the same block/section.
+* `${SECTION:keyword}`: the field is resolved with the value of `keyword` in section `SECTION`.
+
+[NOTE]
+====
+_bool_ options can be provided as True/False, 1/0 or yes/no
+====
+
+== Fields
+
+The file should contain three types of blocks:
+
+`[DEFAULT]`::
+    Contains default parameters.
+    For working-related specifications, like `WorkPath`, `WorkPath`, the information should be given as: "`alias:specification`" with:
+[horizontal]
+    alias:::
+        Alias of the working, for instance to specify the author of the working or a sub-version.
+    specification:::
+        Information.
+Gaussian specification::
+    Expected in the format: ``gXX.REV``, with "`XX`" the major version (e.g., "`09`", "`16`", "`DV`"), and "`REV`" the revision (e.g., "`c01`").
+    Intermediate releases (e.g., "`gdv.i04+`") should be specified with a "`p`" instead of "`+`".
+Working specification::
+    Expected in the format: "`alias.gaussian`" with "`alias`" a unique alias of the working (e.g., author, sub-version), and "`gaussian`" one of the *Gaussian specification*.
+
+
+=== Gaussian specification
+
+The name of the section is important for parsing purposes and should respect the indications given above.
+Example of title: `g16.c01`.
+
+Supported keywords for the Gaussian specifications are:
+
+`Gaussian`::
+    (_str_)
+    Main Gaussian version (e.g., "`Gaussian 16`"), used for documentation purposes.
+`Revision`::
+    (_str_)
+    Revision (e.g., "`C.01`"), used for documentation.
+`Date`::
+    (_str_)
+    Release date of the version, for documentation purposes.
+`GxxPathFmt`::
+    (_str_)
+    Format of the path to Gaussian executables.
+    Supported fields, replaced at runtime.
+[horizontal]
+    `{fullpath}`:::
+        Full path specification, corresponding to option `FullPath`.
+    `{rootpath}`:::
+        Root directory to Gaussian versions, corresponding to option `RootPath`.
+    `{basedir}`:::
+        Installation directory of a specific Gaussian version, corresponding to option `BaseDir`.
+    `{arch}`:::
+        CPU architecture-specific folder.
+    `{gxx}`:::
+        Gaussian directory, typically after `$g16root`, `$g09root`...
+        Defined at runtime.
+    
+`FullPath`::
+    (_str_)
+    Full path where Gaussian is installed, associated for path field specification "```{fullpath}```" or "```{rootpath}/{basedir}```"
+
+`RootPath`::
+    (_str_)
+    Root directory where Gaussian versions are installed.
+
+`BaseDir`::
+    (_str_)
+    Directory specific to the Gaussian version in the general installation repository.
+`ModuleName`::
+    (_str_)
+    Name of the module for the version of Gaussian.
++
+--
+CAUTION: Path and module specifications conflict with each other.  Only one should be provided.
+
+--
+`Shared`::
+    (_str_)
+    Specifies the groups of users which can access the version.
+    "```any```" and "```all```" indicate that there are no restriction (default also if option absent).
+`Workings`::
+    (_str_)
+    Specifies the aliases of the workings supported at the infrastructure level, separated by commas.
++
+--
+NOTE: This option may be ignored and block specifications should be preferred.
+
+--
+
+
+=== Working specifications
+
+The section title should follow the format indicated below, as "`alias.gaussian`" (ex: "```jbl.g16.c01```") to be properly parsed and understood.
+
+The available options are:
+
+`Gaussian`::
+    (_str_)
+    Main version of Gaussian used as reference to construct the working tree.
+`Revision`::
+    (_str_)
+    Revision of the Gaussian version used as reference to construct the working tree.
+`Date`::
+    (_str_)
+    Date of the latest modification of the working tree, used for documentation purpose.
+`WorkPathFmt`::
+    (_str_)
+    Format of the path to working directory
+    Supported fields, replaced at runtime.
+[horizontal]
+    `{workpath}`:::
+        Root directory to working trees, corresponding to option `WorkPath`.
+    `{basedir}`:::
+        Installation directory of a specific Gaussian version, corresponding to option `BaseDir`.
+    `{arch}`:::
+        CPU architecture-specific folder.
+
+`RootPath`::
+    (_str_)
+    Root directory to where the reference Gaussian version is installed if different from standard.
+
+`WorkPath`::
+    (_str_)
+    Root directory to where version-specific workings are stored.
+
+`BaseDir`::
+    (_str_)
+    Directory specific to the Gaussian version in the working repository.
+
+`Changelog`::
+    (_str_)
+    Path to changelog file(s), in the format "```full_path:format```", with "```full_path```" the full path to the file, and format a supported format: "`ADOC`", "`HTML`".
+    Multiple versions of the same file can be provided separated by commas, as "`path_to_file.ext1:format1,.ext2:format2`".
+    Example: "```/path/to/doc/changelog.adoc:ADOC,.html:HTML```". +
+    If the documentation is stored in a subdirectory of the working, the field specification "```{fullpath}```" can be used to refer to the working directory.
+
+`Docs`::
+    (_str_)
+    Other documentations, in the format "```doctype:full_path:format```", with "```doctype```" the type of information to be used when generating the help page(s).
+    The rest of the format follows the same structure as `Changelog`.
+    Multiple documents can be provided over the same number of lines (one per document type).
+    The example below shows such a structure:
++
+--
+[source, ini]
+----
+Docs = REFCARD717:{fullpath}/src/doc/qref_l717.adoc:ADOC,.html:HTML
+    KEYWORD717:{fullpath}/src/doc/guide_l717_keywords.adoc:ADOC
+    INFORMAT717:{fullpath}/src/doc/guide_l717_input.adoc:ADOC
+    REFCARD718:{fullpath}/src/doc/qref_l718.adoc:ADOC,.html:HTML
+    KEYWORD718:{fullpath}/src/doc/guide_l718_keywords.adoc:ADOC
+    INFORMAT718: {fullpath}/src/doc/guide_l718_input.adoc:ADOC
+----
+--1
+
+

@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "gxxtools"
 version = "0.5.0"
 dependencies = [
-    "hpcnodes@git+https://github.com/jbloino/hpcnodes",
+    "hpcnodes @ git+https://github.com/jbloino/hpcnodes.git",
 ]
 requires-python = ">=3.7"
 authors = [
@@ -17,7 +17,7 @@ maintainers = [
 ]
 description = "A simple tool system to run and manage Gaussian on HPC platforms"
 readme = "README.md"
-license = {file = "LICENSE"}
+license = {file = "LICENSE.txt"}
 keywords = ["Gaussian", "HPC"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -33,3 +33,6 @@ gxx_sub = "gxxtools.sub:main"
 
 [project.urls]
 Repository = "https://github.com/jbloino/gxxtools.git"
+
+[tool.setuptools]
+packages = ["gxxtools"]

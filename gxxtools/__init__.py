@@ -93,7 +93,7 @@ gxx_versions = /home/user/gxxversions_example.ini
     }
 
     for key, db in keypath.items():
-        path = _sec.get(key)
+        path = _sec.get(key).format(home=gtpar.home)
         if path is None:
             print(f'Missing {db["doc"]}.')
             if gtpar.files.get(db['key'], default=None) is not None:

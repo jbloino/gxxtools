@@ -1,12 +1,12 @@
 [build-system]
-requires = ["hatchling"]
-build_backend = "hatchling.build"
+requires = ["setuptools >= 50.0"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "gxxtools"
 version = "0.5.0"
 dependencies = [
-    "hpcnodes@git+https://github.com/jbloino/hpcnodes", 
+    "hpcnodes@git+https://github.com/jbloino/hpcnodes",
 ]
 requires-python = ">=3.7"
 authors = [

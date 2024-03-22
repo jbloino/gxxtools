@@ -391,14 +391,15 @@ def _get_spec_generic(opts: argparse.Namespace
     """
     job_extra = {}
 
-    if 'basic' in gtpar.nodes_info:
-        key = 'basic'
-    if 'base' in gtpar.nodes_info:
-        key = 'base'
-    elif 'generic' in gtpar.nodes_info:
-        key = 'generic'
-    elif 'general' in gtpar.nodes_info:
-        key = 'general'
+    nodes = {key.lower(): key for key in gtpar.nodes_info}
+    if 'basic' in nodes:
+        key = nodes['basic']
+    elif 'base' in nodes:
+        key = nodes['base']
+    elif 'generic' in nodes:
+        key = nodes['generic']
+    elif 'general' in nodes:
+        key = nodes['general']
     else:
         raise KeyError('Cannot find the generic specifications.')
     gtpar.node_family = gtpar.nodes_info[key]

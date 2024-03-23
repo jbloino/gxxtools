@@ -17,8 +17,6 @@ import typing as tp
 import hpcnodes as hpc
 import gxxtools as gt
 import gxxtools.params as gtpar
-# import gxxtools.sub as gtsub
-import gxxtools.parse_ini as gtini
 import gxxtools.sub.arch as gthpc
 import gxxtools.sub.gaussian as gtgxx
 import gxxtools.sub.cmds as gtcmd
@@ -769,32 +767,37 @@ ERROR: Too many processors required for the available resources.
     # -------------------
     run_parallel = multi_gjf and options['multijob'] == 'parallel'
     wtime = options['qinfo'].get('walltime', '')
+    if options['nojob']:
+        cmdfobj = sys.stdout
+    else:
+        cmdfile = f'run_job_{JOB_PID}.sh'
+        print(f'Building command file {cmdfile}.')
+        cmdfobj = open(cmdfile, 'w', encoding='utf-8')
     if gtpar.server['submitter'] == 'qsub':
-        job_extra_res, job_extra_cmd = \
-              gtcmd.build_qsub_extra(options['qinfo'])
-        if options['nojob']:
-            cmdfobj = sys.stdout
-        else:
-            cmdfile = f'run_job_{JOB_PID}.sh'
-            print(f'Building command file {cmdfile}.')
-            cmdfobj = open(cmdfile, 'w', encoding='utf-8')
-        gtcmd.build_qsub_cmd(cmdfobj, options['jobname'], nprocs, mem,
-                             gjf_files, options['logfiles'],
-                             options['gxx_cmds'], options['gxx_exedir'],
-                             options['gxx'], WORKDIR, options['tmpdir'],
-                             gtpar.server['runlocal'], run_parallel,
-                             jobaddres=job_extra_res,
-                             jobaddcmd=job_extra_cmd,
-                             jobwtime=wtime, jobemail=options['mailto'],
-                             cmdcpto=cpto, cmdcpfrom=cpfrom,
-                             cmdrmtemp=gtpar.server['deltmpcmd'])
-        if not options['nojob']:
-            cmdfobj.close()
-            qsub_cmd = ['qsub']
-            if 'qname' in options['qinfo']:
-                qsub_cmd.extend(['-q', options['qinfo']['qname']])
-            qsub_cmd.append(cmdfile)
-            # print(*qsub_cmd)
-            cmd = subprocess.run(qsub_cmd, text=True, check=True,
-                                 capture_output=True)
-            print(f'QSub submission job: "{cmd.stdout.strip()}"')
+        gtcmd.build_qsub_head(cmdfobj, options['jobname'], nprocs, mem,
+                              jobwtime=wtime, jobemail=options['mailto'],
+                              extraopts=options['qinfo'])
+        sub_cmd = ['qsub']
+        if 'qname' in options['qinfo']:
+            sub_cmd.extend(['-q', options['qinfo']['qname']])
+    elif gtpar.server['submitter'] == 'slurm':
+        gtcmd.build_sbatch_head(cmdfobj, options['jobname'], nprocs, mem,
+                                jobwtime=wtime, jobemail=options['mailto'],
+                                extraopts=options['qinfo'])
+        sub_cmd = ['sbatch']
+    else:
+        print('Unsupported submitter program')
+        sys.exit(1)
+    gtcmd.build_bash_cmd(cmdfobj, gjf_files, options['logfiles'],
+                         options['gxx_cmds'], options['gxx_exedir'],
+                         options['gxx'], WORKDIR, options['tmpdir'],
+                         gtpar.server['runlocal'], run_parallel,
+                         cmdcpto=cpto, cmdcpfrom=cpfrom,
+                         cmdrmtemp=gtpar.server['deltmpcmd'])
+    if not options['nojob']:
+        cmdfobj.close()
+        sub_cmd.append(cmdfile)
+        # print(*qsub_cmd)
+        cmd = subprocess.run(sub_cmd, text=True, check=True,
+                             capture_output=True)
+        print(f'Submission job ID: "{cmd.stdout.strip()}"')

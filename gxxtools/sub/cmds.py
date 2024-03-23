@@ -4,67 +4,14 @@ import os
 import typing as tp
 
 
-def build_qsub_extra(db_extra: tp.Dict[str, str]) -> tp.Union[str, str]:
-    """Build extra commands for a qsub-like submitter.
-
-    Translates the keywords stored in `db_extra` into commands for
-    qsub.
-    Commands are separated in two groups:
-
-    1. extra options to be included as -l after "select".
-    2. separate instructions involving different options.
-
-    Parameters
-    ----------
-    db_extra
-        Dictionary with extra options to pass to the submitter.
-
-    Returns
-    -------
-    str
-        options to add to the main command with select.
-    str
-        additional instructions for PBS.
-    """
-    extra_opts = ''
-    extra_cmds = []
-
-    if 'host' in db_extra:
-        extra_opts += f':host={db_extra["host"]}'
-
-    if 'qname' in db_extra:
-        extra_opts += f':Qlist={db_extra["qname"]}'
-
-    if 'diskmem' in db_extra:
-        extra_opts += f':scratch_local={db_extra["diskmem"]}'
-
-    if 'group' in db_extra:
-        extra_cmds.append(f'#PBS -W group-list={db_extra["group"]}')
-
-    return extra_opts, '\n'.join(extra_cmds)
-
-
-def build_qsub_cmd(out: tp.TextIO,
-                   jobtitle: str,
-                   jobncpus: int,
-                   jobmem: int,
-                   ginfiles: tp.Sequence[str],
-                   logfiles: tp.Sequence[str],
-                   gxxenv: str,
-                   gxxargs: str,
-                   gxx: str,
-                   wrkdir: str,
-                   tmpdir: str,
-                   runlocal: bool,
-                   parallel: bool,
-                   jobaddres: str = '',
-                   jobaddcmd: str = '',
-                   jobwtime: str = '',
-                   jobemail: str = '',
-                   cmdcpto: str = '',
-                   cmdcpfrom: str = '',
-                   cmdrmtemp: tp.Optional[str] = None
-                   ):
+def build_qsub_head(out: tp.TextIO,
+                    jobtitle: str,
+                    jobncpus: int,
+                    jobmem: int,
+                    jobwtime: str = '',
+                    jobemail: str = '',
+                    extraopts: tp.Optional[tp.Dict[str, str]] = None
+                    ):
     """Build QSub script.
 
     Builds a script to be run by a PBS-compatible job submitter.
@@ -80,6 +27,133 @@ def build_qsub_cmd(out: tp.TextIO,
         Number of processors to request
     jobmem
         Memory requirements, with units.
+    jobwtime
+        Walltime for PBS job.
+    jobemail
+        Email address to send job notifications.
+    extraopts
+        Dictionary with extra options to pass to the submitter.
+    """
+    extra_res = ''
+    if 'host' in extraopts:
+        extra_res += f':host={extraopts["host"]}'
+    if 'qname' in extraopts:
+        extra_res += f':Qlist={extraopts["qname"]}'
+    if 'diskmem' in extraopts:
+        extra_res += f':scratch_local={extraopts["diskmem"]}'
+
+    subcmd = f"""#!/bin/bash
+
+#PBS -N {jobtitle}
+#PBS -l select=1:ncpus={jobncpus}:mem={jobmem}{extra_res}
+"""
+    if jobwtime.strip():
+        subcmd += f'#PBS -l walltime={jobwtime}\n'
+    if jobemail.strip():
+        subcmd += f'#PBS -m abe -M {jobemail}\n'
+    if 'group' in extraopts:
+        subcmd += f'#PBS -W group-list={extraopts["group"]}\n'
+
+    subcmd += '''
+# Store special variable for summary
+JOB_QUEUE=$PBS_O_QUEUE
+JOB_HOST=$PBS_O_HOST
+JOB_ID=$PBS_JOBID
+JOB_NAME=$PBS_JOBNAME
+'''
+
+    print(subcmd, file=out)
+
+
+def build_sbatch_head(out: tp.TextIO,
+                      jobtitle: str,
+                      jobncpus: int,
+                      jobmem: int,
+                      jobwtime: str = '',
+                      jobemail: str = '',
+                      extraopts: tp.Optional[tp.Dict[str, str]] = None
+                      ):
+    """Build script for SLURM.
+
+    Builds a script to be run by a SLURM-compatible job submitter.
+    The script is stored in file/stream opened as `out`.
+
+    Parameters
+    ----------
+    out:
+        Output file object.
+    jobtitle
+        Name of the job for the queue system.
+    jobncpus
+        Number of processors to request
+    jobmem
+        Memory requirements, with units.
+    jobwtime
+        Walltime for PBS job.
+    jobemail
+        Email address to send job notifications.
+    extraopts
+        Dictionary with extra options to pass to the submitter.
+
+    Notes
+    -----
+    Some recommend for SMP jobs: --nodes=1, --ntasks=1, --cpus-per-tasks=N
+    It may have to be tested.
+    """
+    subcmd = f"""#!/bin/bash
+
+#SBATCH --job-name {jobtitle}
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node={jobncpus}
+#SBATCH --mem={jobmem}
+"""
+    if 'qname' in extraopts:
+        subcmd += '#SBATCH --partition={extraopts["qname"]}\n'
+    if jobwtime.strip():
+        subcmd += f'#SBATCH --time={jobwtime}\n'
+    if 'host' in extraopts:
+        subcmd += '#SBATCH --nodelist={extraopts["host"]}\n'
+    subcmd += '#SBATCH --exclusive\n'
+    if jobemail.strip():
+        subcmd += f"""\
+#SBATCH --mail-type=all
+#SBATCH --mail-user={jobemail}
+"""
+
+    subcmd += '''
+# Store special variable for summary
+JOB_QUEUE=$SLURM_JOB_PARTITION
+JOB_HOST=$SLURM_SUBMIT_HOST
+JOB_ID=$SLURM_JOBID
+JOB_NAME=$SLURM_JOB_NAME
+'''
+
+    print(subcmd, file=out)
+
+
+def build_bash_cmd(out: tp.TextIO,
+                   ginfiles: tp.Sequence[str],
+                   logfiles: tp.Sequence[str],
+                   gxxenv: str,
+                   gxxargs: str,
+                   gxx: str,
+                   wrkdir: str,
+                   tmpdir: str,
+                   runlocal: bool,
+                   parallel: bool,
+                   cmdcpto: str = '',
+                   cmdcpfrom: str = '',
+                   cmdrmtemp: tp.Optional[str] = None
+                   ):
+    """Build pure BASH/shell cmds for the submiiter.
+
+    Builds a script to be run by BASH-compatible shell.
+    The script is stored in file/stream opened as `out`.
+
+    Parameters
+    ----------
+    out:
+        Output file object.
     ginfiles
         List of Gaussian input files.
     logfiles
@@ -98,14 +172,6 @@ def build_qsub_cmd(out: tp.TextIO,
         The job must be run purely on nodes, including the output.
     parallel
         Multiple Gaussian jobs must be run in parallel.
-    jobaddres
-        Extra resources commands for PBS job.
-    jobaddcmd
-        Extra commands for PBS job.
-    jobwtime
-        Walltime for PBS job.
-    jobemail
-        Email address to send job notifications.
     cmdcpto:
         Additional commands to copy file *to* temp. directory.
     cmdcpfrom:
@@ -113,102 +179,90 @@ def build_qsub_cmd(out: tp.TextIO,
     cmdrmtemp:
         Command to delete temporary directory (only if non-standard).
     """
-    subcmd = f"""#!/bin/bash
-
-#PBS -N {jobtitle}
-#PBS -l select=1:ncpus={jobncpus}:mem={jobmem}{jobaddres}
-"""
-    if jobwtime.strip():
-        subcmd += f'#PBS -l walltime={jobwtime}\n'
-    if jobemail.strip():
-        subcmd += f'#PBS -m abe -M {jobemail}\n'
-    if jobaddcmd:
-        subcmd += jobaddcmd + '\n'
-
-    subcmd += f"""
+    runcmd = f"""
 # WORKDIR: work directory from head node
 # TEMPDIR: temporary directory
 WORKDIR={wrkdir}
 TEMPDIR={tmpdir}
 """
     if tmpdir.startswith("$"):
-        subcmd += f"""
+        runcmd += f"""
 # test if temporary directory is set, exit with error message if missing.
 test -n "$TEMPDIR" || {{ echo >&2 "Variable {tmpdir[1:]} is not set!"; \
 exit 1; }}
 """
     else:
-        subcmd += f"""
+        runcmd += f"""
 mkdir -p {tmpdir}
 # test if temporary directory is created.
 test -d "$TEMPDIR" || \
 {{ echo >&2 "Temporary director {tmpdir} could not be created"; exit 1; }}
 """
 
-    subcmd += f'''
+    runcmd += f'''
 echo "----------------------------------------"
-echo "PBS queue:     "$PBS_O_QUEUE
-echo "PBS host:      "$PBS_O_HOST
-echo "PBS node:      "$HOSTNAME
-echo "PBS workdir:   {tmpdir}"
-echo "PBS jobid:     "$PBS_JOBID
-echo "PBS jobname:   "$PBS_JOBNAME
-echo "PBS inputfile: {', '.join(ginfiles)}"
+echo "JOB queue:     "$JOB_QUEUE
+echo "JOB host:      "$JOB_HOST
+echo "JOB node:      "$HOSTNAME
+echo "JOB workdir:   {tmpdir}"
+echo "JOB jobid:     "$JOB_ID
+echo "JOB jobname:   "$JOB_NAME
+echo "JOB inputfile: {', '.join(ginfiles)}"
 echo "----------------------------------------"
 
-echo "$PBS_JOBID is running on node `hostname -f` in a scratch \
+echo "$JOB_ID is running on node `hostname -f` in a scratch \
 directory $TEMPDIR" >> $WORKDIR/jobs_info.txt
 '''
 
-    subcmd += f'\n{gxxenv}\n'
+    runcmd += f'\n{gxxenv}\n'
 
-    subcmd += '\n{\n'
+    runcmd += '\n{\n'
     for gjf in ginfiles:
-        subcmd += f'mv {gjf} $TEMPDIR/\n'
-    subcmd += '''\
+        runcmd += f'mv {gjf} $TEMPDIR/\n'
+    runcmd += '''\
 } || { echo >&2 "Error while moving input file(s)!"; exit 2; }
 '''
 
-    subcmd += '''
+    runcmd += '''
 # move into scratch directory
 cd $TEMPDIR
 '''
 
     if cmdcpto:
-        subcmd += f'''
+        runcmd += f'''
 {{
 {cmdcpto}
 }} || {{ echo >&2 "Error while copying input file(s)!"; exit 2; }}
 '''
 
     endline = ' &' if parallel else ''
-    subcmd += '\n'
+    runcmd += '\n'
     for gjf, log in zip(ginfiles, logfiles):
         gjf_ = os.path.basename(gjf)
         log_ = os.path.basename(log)
         if runlocal:
-            subcmd += f'({gxx} {gxxargs} {gjf_} {log_}; ' \
+            runcmd += f'({gxx} {gxxargs} {gjf_} {log_}; ' \
                 + f'cp {log_} {log}){endline}\n'
         else:
-            subcmd += f'{gxx} {gxxargs} {gjf_} {log}{endline}\n'
+            runcmd += f'{gxx} {gxxargs} {gjf_} {log}{endline}\n'
     if parallel:
-        subcmd += 'wait\n'
+        runcmd += 'wait\n'
 
     if cmdcpfrom:
-        subcmd += f'''
+        runcmd += f'''
 {{
 {cmdcpfrom}
 }} || {{ echo >&2 "Error copying back files with code $?"; exit 4; }}
 '''
 
-    subcmd += '''
+    runcmd += '''
 # Cleaning scratch directory.
 '''
     if cmdrmtemp is not None:
-        subcmd += cmdrmtemp
+        runcmd += cmdrmtemp
     else:
-        subcmd += 'cd ${HOME}\nrm -rf ${TEMPDIR}'
+        runcmd += 'cd ${HOME}\nrm -rf ${TEMPDIR}'
 
-    subcmd += '\n'
+    runcmd += '\n'
 
-    print(subcmd, file=out)
+    print(runcmd, file=out)

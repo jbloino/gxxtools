@@ -340,12 +340,14 @@ def srv_info(what: str, cfg_file: tp.Optional[str] = None
             raise ValueError('Missing server alias')
     elif query == 'email':
         res = config.get(_SEC_SRV, 'email', fallback=None)
-    elif query in ('submitter', 'sub', 'job', 'qsub'):
+    elif query in ('submitter', 'sub', 'job', 'qsub', 'slurm'):
         res = config.get(_SEC_SRV, 'submitter', fallback='qsub').lower()
-        if res not in ('qsub', ):
+        if res not in ('qsub', 'slurm'):
             raise ValueError('Unsupported type of job submitter.')
         if query == 'qsub':
             res = res == 'qsub'
+        elif query == 'slurm':
+            res = res == 'slurm'
     elif query in ('jobtype', 'srvtype', 'servertype', 'queues', 'noqueues',
                    'dispatch', 'central'):
         res = config.get(_SEC_SRV, 'jobtype', fallback='queues').lower()

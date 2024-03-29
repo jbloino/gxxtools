@@ -108,7 +108,7 @@ def build_sbatch_head(out: tp.TextIO,
 #SBATCH --mem={jobmem}
 """
     if 'qname' in extraopts:
-        subcmd += '#SBATCH --partition={extraopts["qname"]}\n'
+        subcmd += f'#SBATCH --partition={extraopts["qname"]}\n'
     if jobwtime.strip():
         subcmd += f'#SBATCH --time={jobwtime}\n'
     if 'host' in extraopts:

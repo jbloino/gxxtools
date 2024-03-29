@@ -78,6 +78,18 @@ General information of the queue parameters.
     (_bool_ | *default*: no)
     A walltime must be explicitly provided.
     The expected format is "```HH:MM:SS```".
+`qtype_to_wtime`::
+    (_dict_ | *default*: _empty_)
+    Provides the translation of a queue type into a walltime as: "`qtype: walltime`".
+    For instance "```long: 24:00:00```" would be translated into queue names containing the "`long`" keyword into a default walltime of 24 hours.
++
+--
+CAUTION: the test is relatively weak and could fail if queue names contain constant blocks which overlap with the queue type.
+
+--
+`default_wtime`::
+    (_str_ | *default*: _empty_)
+    Default walltime to be used if no values are provided by user.
 
 
 === `COMPILER`

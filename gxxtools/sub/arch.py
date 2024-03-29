@@ -88,9 +88,15 @@ This is set automatically based on the node configuration.
         parser.add_argument(
             '--tmpspace', metavar='TEMP_SPACE', default='10GB',
             help='Temporary storage space.')
-    if gtini.get_info('walltime_needed'):
+    wtime = gtini.sub_info('walltime')
+    if wtime:
+        needed = wtime is True
+        if isinstance(wtime, str):
+            defval = wtime
+        else:
+            defval = None
         parser.add_argument(
-            '--walltime', default='24:00:00',
+            '--walltime', default=defval, required=needed,
             help='Sets the walltime for the job (as hh:mm:ss).')
 
 
@@ -157,10 +163,35 @@ def get_arch_spec(opts: argparse.Namespace,
         maxcpu, maxmem, job_extra = _get_spec_generic(opts)
 
     if gtini.get_info('walltime_needed'):
-        if not re.fullmatch(r'\d+:\d{2}:\d{2}', opts.walltime):
+        if opts.walltime is None:
+            wtime_dat = gtini.sub_info('walltime')
+            if isinstance(wtime_dat, dict):
+                if 'qname' not in job_extra:
+                    print('ERROR: missing queue name to set walltime.')
+                    sys.exit(10)
+                qbase = job_extra.get('qbase', '')
+                # The following test is weak since it assumes that the
+                # queue_type cannot appear as is in another part of the format.
+                # In practice, this means that if we have queue types short and
+                # long, then the system would be confused with a format like:
+                # {node_queue_name}long_{queue_type}.
+                qname = job_extra['qname'].replace(qbase, '')
+                wtime = None
+                for key, val in wtime_dat.items():
+                    if key and key in qname:
+                        wtime = val
+                        break
+                if '' in wtime_dat and wtime is None:
+                    wtime = wtime_dat['']
+            else:
+                print('ERROR: missing walltime')
+                sys.exit(10)
+        else:
+            wtime = opts.walltime
+        if not re.fullmatch(r'\d+:\d{2}:\d{2}', wtime):
             print('ERROR: wrong format for the walltime')
             sys.exit(10)
-        job_extra['walltime'] = opts.walltime
+        job_extra['walltime'] = wtime
     if gtpar.server['nodestype'] == 'central':
         try:
             hpc.convert_storage(opts.tmpspace)
@@ -244,6 +275,7 @@ def _get_spec_by_queue(opts: argparse.Namespace
         gtpar.node_family = gtpar.nodes_info[gtpar.queues_info[queue]]
     except KeyError as err:
         raise KeyError('Unsupported queue.') from err
+    job_extra['qbase'] = gtpar.node_family.queue_name
 
     # Definition of number of processors
     # ----------------------------------

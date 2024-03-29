@@ -3,6 +3,7 @@
 import os
 import sys
 import re
+import typing as tp
 from configparser import ConfigParser, ExtendedInterpolation
 
 import gxxtools.params as gtpar
@@ -13,11 +14,19 @@ _RC_DIR = os.path.join(gtpar.home, '.config')
 _RC_PATH = os.path.join(_RC_DIR, _RC_FILE)
 _ALT_RC_PATH = os.path.join(gtpar.home, f'.{_RC_FILE}')
 
-DEBUG = False
 
-
-def load_rc():
-    """Initialize basic parameters for GxxTools."""
+def load_rc(server: tp.Optional[str] = None):
+    """Initialize basic parameters for GxxTools.
+    
+    server can be provided to override the default configuration,
+    typically for debugging purposes.
+    
+    Parameters
+    ----------
+    server
+        Server to emulate, either as a full address or an alias,
+        compatible with gxxtoolsrc section keywords.
+    """
     if os.path.exists(_RC_PATH):
         gt_rc_file = _RC_PATH
     elif os.path.exists(_ALT_RC_PATH):
@@ -52,8 +61,13 @@ gxx_versions = /home/user/gxxversions_example.ini
 """)
         sys.exit(1)
 
-    if DEBUG:
+    if gtpar.DEBUG:
         print('Using main configuration file from', gt_rc_file)
+
+    if server is not None:
+        if gtpar.DEBUG:
+            print(f'Overridding the server addr to: {server}.')
+        gtpar.server['headaddr'] = server
 
     config = ConfigParser(interpolation=ExtendedInterpolation())
     config.read(gt_rc_file)

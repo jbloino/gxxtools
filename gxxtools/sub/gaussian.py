@@ -571,7 +571,7 @@ def get_gxx_spec(opts: argparse.Namespace) -> tp.Tuple[str, str, str]:
     else:
         work_info = None
         gver_info = None
-        if os.path.exists(gver):
+        if os.path.exists(gver) or gtpar.DEBUG:
             is_path = True
             # Check if directory or executable file
             if not os.path.isdir(gver):
@@ -607,6 +607,8 @@ def get_gxx_spec(opts: argparse.Namespace) -> tp.Tuple[str, str, str]:
                         'ERROR: Unsupported machine architecture in working.')
                     sys.exit(2)
                 gxxroot = gver_info['path'].replace('{arch}', gxx_arch)
+            else:
+                gxxroot = gver_info['path']
             gxxroot = gxxroot.replace('{gxx}', gver_info['gxx'])
             if '{arch}' in gxxroot:
                 print('ERROR: Gaussian path not fully resolved.')
@@ -648,7 +650,7 @@ def get_gxx_spec(opts: argparse.Namespace) -> tp.Tuple[str, str, str]:
         gxxworks.append(gxxwork)
     if opts.gxxwrk:
         for workdir in opts.gxxwrk:
-            if os.path.exists(workdir):
+            if os.path.exists(workdir) or gtpar.DEBUG:
                 gxxworks.append(workdir)
             else:
                 fmt = 'ERROR: working tree directory "{}" does not exits'
@@ -676,7 +678,7 @@ def init():
     gconf = ConfigParser()
     gxxfiles = []
     path = os.path.join(os.getenv('HOME'), gtpar.files['gxxver'])
-    if os.path.exists(path):
+    if os.path.exists(path) or gtpar.DEBUG:
         gxxfiles.append(path)
     if gtpar.paths['gxxver'] is not None:
         gxxfiles.append(gtpar.paths['gxxver'])

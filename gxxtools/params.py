@@ -4,6 +4,8 @@ import os
 home = os.getenv('HOME')
 user = os.getlogin()
 
+DEBUG = False
+
 # State of build of parameters
 # 0: not initialized
 # 1: initialized by basic init of gxxtools

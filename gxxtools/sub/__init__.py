@@ -158,7 +158,9 @@ Sets the read-write filename (Expert use!).
     return parser
 
 
-def parse_options(parser: argparse.ArgumentParser) -> tp.Dict[str, tp.Any]:
+def parse_options(parser: argparse.ArgumentParser,
+                  cmdargs: tp.Optional[tp.Sequence[str]] = None
+                  ) -> tp.Dict[str, tp.Any]:
     """Parse and analyze options.
 
     Parses commandline and other options and generate all relevant
@@ -168,6 +170,8 @@ def parse_options(parser: argparse.ArgumentParser) -> tp.Dict[str, tp.Any]:
     ----------
     parser
         Commandline argument parser.
+    cmdargs
+        Commandline arguments.
 
     Returns
     -------
@@ -180,7 +184,7 @@ def parse_options(parser: argparse.ArgumentParser) -> tp.Dict[str, tp.Any]:
     there are many exit points while building the parameters.
 
     """
-    argopts = parser.parse_args()
+    argopts = parser.parse_args(cmdargs)
 
     options = {
         'gxxlnk0': argopts.gxxl0K,
@@ -642,9 +646,21 @@ def check_gjf(gjf_ref: str,
 
 def main():
     """Submit Gaussian job on HPC nodes."""
+    # Check first if debugging mode enabled to override some initialization
+    cmd_args = sys.argv[1:].copy()
+    for i, item in enumerate(cmd_args):
+        if item.lower().startswith('--debug'):
+            if '=' in item:
+                emulate = item.split('=', maxsplit=1)[1].lower()
+            else:
+                emulate = None
+            gtpar.DEBUG = True
+        del cmd_args[i]
+        break
+
     # Initialization
     # --------------
-    gt.load_rc()
+    gt.load_rc(emulate)
 
     # Nodes/Architecture specification
     # --------------------------------
@@ -662,9 +678,10 @@ def main():
 
     # Option building and parsing
     # ---------------------------
+    # First check if debug mode requested:
     parser = build_parser()
 
-    options = parse_options(parser)
+    options = parse_options(parser, cmd_args)
     multi_gjf = options['n_input'] > 1
 
     # Resources definition
@@ -767,7 +784,7 @@ ERROR: Too many processors required for the available resources.
     # -------------------
     run_parallel = multi_gjf and options['multijob'] == 'parallel'
     wtime = options['qinfo'].get('walltime', '')
-    if options['nojob']:
+    if options['nojob'] or gtpar.DEBUG:
         cmdfobj = sys.stdout
     else:
         cmdfile = f'run_job_{JOB_PID}.sh'
@@ -794,7 +811,7 @@ ERROR: Too many processors required for the available resources.
                          gtpar.server['runlocal'], run_parallel,
                          cmdcpto=cpto, cmdcpfrom=cpfrom,
                          cmdrmtemp=gtpar.server['deltmpcmd'])
-    if not options['nojob']:
+    if not options['nojob'] and not gtpar.DEBUG:
         cmdfobj.close()
         sub_cmd.append(cmdfile)
         # print(*qsub_cmd)

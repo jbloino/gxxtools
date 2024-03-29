@@ -252,8 +252,7 @@ def gxx_info(what: str, cfg_file: tp.Optional[str] = None
     return res
 
 
-def sub_info(what: str, cfg_file: tp.Optional[str] = None
-             ) -> tp.Optional[tp.Union[str, bool]]:
+def sub_info(what: str, cfg_file: tp.Optional[str] = None) -> tp.Any:
     """Return queue/submission-related data.
 
     Returns the queue-related information corresponding to `what` from
@@ -269,8 +268,8 @@ def sub_info(what: str, cfg_file: tp.Optional[str] = None
 
     Returns
     -------
-    str
-        Path to file.
+    any
+        Relevant information.
 
     Raises
     ------
@@ -293,7 +292,31 @@ def sub_info(what: str, cfg_file: tp.Optional[str] = None
     elif query in ('manual', 'nodes'):
         res = config.getboolean(_SEC_QUEUE, 'manual', fallback=True)
     elif query in ('walltime', 'wtime'):
-        res = config.get(_SEC_QUEUE, 'walltime', fallback=None)
+        wtime = config.getboolean(_SEC_QUEUE, 'walltime', fallback=False)
+        if wtime:
+            val = config.get(_SEC_QUEUE, 'default_wtime', fallback=None)
+            if val is not None:
+                res = val
+            else:
+                val = config.get(_SEC_QUEUE, 'qtype_to_wtime', fallback=None)
+                if val is not None:
+                    vals = {}
+                    for item in val.split(','):
+                        try:
+                            qtype, tlen = item.split(':', maxsplit=1)
+                        except ValueError:
+                            print('Wrong format for qtype_to_wtime')
+                            print('expected: "qtype: wallime"')
+                            sys.exit(100)
+                        if qtype.strip().lower() == 'none':
+                            vals[''] = tlen.strip()
+                        else:
+                            vals[qtype.strip()] = tlen.strip()
+                    res = vals.copy()
+                else:
+                    res = True
+        else:
+            res = False
     else:
         raise KeyError('Unrecognized queue information')
 
@@ -415,6 +438,8 @@ def get_info(what: str, cfg_file: tp.Optional[str] = None
         res = config.getboolean(_SEC_QUEUE, 'manual', fallback=True)
     elif what.lower() in ('walltime_needed'):
         res = config.getboolean(_SEC_QUEUE, 'walltime', fallback=False)
+    elif what.lower() in ('walltime_default', 'walltime'):
+        res = config.get(_SEC_QUEUE, 'default_wtime', fallback=None)
     else:
         raise KeyError('Unrecognized information')
 

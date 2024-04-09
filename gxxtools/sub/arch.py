@@ -97,7 +97,7 @@ This is set automatically based on the node configuration.
             defval = None
         parser.add_argument(
             '--walltime', default=defval, required=needed,
-            help='Sets the walltime for the job (as hh:mm:ss).')
+            help='Sets the walltime for the job (as d-hh:mm:ss).')
 
 
 def parser_doc_queues() -> tp.Optional[str]:
@@ -188,7 +188,7 @@ def get_arch_spec(opts: argparse.Namespace,
                 sys.exit(10)
         else:
             wtime = opts.walltime
-        if not re.fullmatch(r'\d+:\d{2}:\d{2}', wtime):
+        if not re.fullmatch(r'(?:\d+-)?\d+:\d{2}:\d{2}', wtime):
             print('ERROR: wrong format for the walltime')
             sys.exit(10)
         job_extra['walltime'] = wtime

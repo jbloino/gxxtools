@@ -24,7 +24,7 @@ _GXX_ARCHS = {
     'westmere': 'intel64-nehalem',
     'sandybridge': 'intel64-sandybridge',
     'ivybridge': 'intel64-sandybridge',
-    'skylake': 'intel64-sandybridge',
+    'skylake': 'intel64-haswell',
     'cascadelake': 'intel64-haswell',
     'bulldozer': 'amd64-istanbul',
     'rome': 'intel64-haswell',

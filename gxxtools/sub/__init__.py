@@ -647,20 +647,29 @@ def check_gjf(gjf_ref: str,
 def main():
     """Submit Gaussian job on HPC nodes."""
     # Check first if debugging mode enabled to override some initialization
+    emulate = None
+    rcfile = None
     cmd_args = sys.argv[1:].copy()
+    todel = []
     for i, item in enumerate(cmd_args):
         if item.lower().startswith('--debug'):
             if '=' in item:
                 emulate = item.split('=', maxsplit=1)[1].lower()
-            else:
-                emulate = None
             gtpar.DEBUG = True
+            todel.append(i)
+        elif item.lower().startswith('--rc'):
+            args = item.split('=')
+            if len(args) == 1:
+                print('ERROR: Missing configuration file for gxxtools')
+                sys.exit(100)
+            rcfile = args[-1]
+            todel.append(i)
+    for i in sorted(todel, reverse=True):
         del cmd_args[i]
-        break
 
     # Initialization
     # --------------
-    gt.load_rc(emulate)
+    gt.load_rc(emulate, rcfile)
 
     # Nodes/Architecture specification
     # --------------------------------

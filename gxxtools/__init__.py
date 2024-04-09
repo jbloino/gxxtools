@@ -15,7 +15,8 @@ _RC_PATH = os.path.join(_RC_DIR, _RC_FILE)
 _ALT_RC_PATH = os.path.join(gtpar.home, f'.{_RC_FILE}')
 
 
-def load_rc(server: tp.Optional[str] = None):
+def load_rc(server: tp.Optional[str] = None,
+            rcfile: tp.Optional[str] = None):
     """Initialize basic parameters for GxxTools.
     
     server can be provided to override the default configuration,
@@ -26,8 +27,15 @@ def load_rc(server: tp.Optional[str] = None):
     server
         Server to emulate, either as a full address or an alias,
         compatible with gxxtoolsrc section keywords.
+    rcfile
+        Path to gxxtoolsrc file.
     """
-    if os.path.exists(_RC_PATH):
+    if rcfile is not None:
+        if not os.path.exists(rcfile):
+            print(f'Configuration file {rcfile} not found.')
+            sys.exit()
+        gt_rc_file = rcfile
+    elif os.path.exists(_RC_PATH):
         gt_rc_file = _RC_PATH
     elif os.path.exists(_ALT_RC_PATH):
         gt_rc_file = _ALT_RC_PATH
@@ -39,7 +47,7 @@ def load_rc(server: tp.Optional[str] = None):
             os.makedirs(_RC_DIR)
         with open(_RC_PATH, 'w', encoding='utf-8') as fobj:
             fobj.write("""\
-# Configuration file for the gxxtool library.
+# Configuration file for the gxxtools library.
 # Each section corresponds to a HPC head node hostname or domain.
 # examples: "*.domain.com" or "example.domain.com"
 # Multiple equivalent domains/addresses can be given, separated by commas.

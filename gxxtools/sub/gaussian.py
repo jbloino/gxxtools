@@ -27,8 +27,12 @@ _GXX_ARCHS = {
     'skylake': 'intel64-haswell',
     'cascadelake': 'intel64-haswell',
     'bulldozer': 'amd64-istanbul',
+    'naples': 'intel64-haswell',
     'rome': 'intel64-haswell',
     'milan': 'intel64-haswell',
+    'zen1': 'intel64-haswell',
+    'zen2': 'intel64-haswell',
+    'zen3': 'intel64-haswell',
 }
 # By default, Gxx_QSub allows unsupported workings (workings not listed in
 #   the section of Gaussian versions).  If set False, only workings listed

@@ -193,7 +193,7 @@ exit 1; }}
 """
     else:
         runcmd += f"""
-mkdir -p {tmpdir}
+mkdir -p $TEMPDIR
 # test if temporary directory is created.
 test -d "$TEMPDIR" || \
 {{ echo >&2 "Temporary director {tmpdir} could not be created"; exit 1; }}

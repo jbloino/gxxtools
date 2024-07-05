@@ -4,14 +4,14 @@ import os
 import typing as tp
 
 
-def build_qsub_head(out: tp.TextIO,
-                    jobtitle: str,
-                    jobncpus: int,
-                    jobmem: int,
+def build_qsub_head(out: tp.Optional[tp.TextIO] = None,
+                    jobtitle: str = 'generic',
+                    jobncpus: int = 1,
+                    jobmem: str = '16GB',
                     jobwtime: str = '',
                     jobemail: str = '',
                     extraopts: tp.Optional[tp.Dict[str, str]] = None
-                    ):
+                    ) -> tp.Optional[str]:
     """Build QSub script.
 
     Builds a script to be run by a PBS-compatible job submitter.
@@ -33,6 +33,11 @@ def build_qsub_head(out: tp.TextIO,
         Email address to send job notifications.
     extraopts
         Dictionary with extra options to pass to the submitter.
+
+    Returns
+    -------
+    str
+        list of submitter commands if `out` is None.
     """
     extra_res = ''
     if 'host' in extraopts:
@@ -62,17 +67,20 @@ JOB_ID=$PBS_JOBID
 JOB_NAME=$PBS_JOBNAME
 '''
 
-    print(subcmd, file=out)
+    if out is None:
+        return subcmd
+    else:
+        print(subcmd, file=out)
 
 
-def build_sbatch_head(out: tp.TextIO,
-                      jobtitle: str,
-                      jobncpus: int,
-                      jobmem: int,
+def build_sbatch_head(out: tp.Optional[tp.TextIO] = None,
+                      jobtitle: str = 'generic',
+                      jobncpus: int = 1,
+                      jobmem: str = '16GB',
                       jobwtime: str = '',
                       jobemail: str = '',
                       extraopts: tp.Optional[tp.Dict[str, str]] = None
-                      ):
+                      ) -> tp.Optional[str]:
     """Build script for SLURM.
 
     Builds a script to be run by a SLURM-compatible job submitter.
@@ -94,6 +102,11 @@ def build_sbatch_head(out: tp.TextIO,
         Email address to send job notifications.
     extraopts
         Dictionary with extra options to pass to the submitter.
+
+    Returns
+    -------
+    str
+        list of submitter commands if `out` is None.
 
     Notes
     -----
@@ -128,7 +141,10 @@ JOB_ID=$SLURM_JOBID
 JOB_NAME=$SLURM_JOB_NAME
 '''
 
-    print(subcmd, file=out)
+    if out is None:
+        return out
+    else:
+        print(subcmd, file=out)
 
 
 def build_bash_cmd(out: tp.TextIO,

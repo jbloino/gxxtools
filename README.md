@@ -11,3 +11,6 @@ Several modules are provides:
 - `parse_ini`: parses a configuration file with information on Gaussian versions.
 - `utils`: provides a HPC-aware system to query Gaussian utilities.
 
+## To install the tool suite
+
+pip3 install -e git+https://github.com/jbloino/gxxtools.git#egg=gxxtools

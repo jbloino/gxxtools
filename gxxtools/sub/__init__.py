@@ -804,8 +804,6 @@ ERROR: Too many processors required for the available resources.
                               jobwtime=wtime, jobemail=options['mailto'],
                               extraopts=options['qinfo'])
         sub_cmd = ['qsub']
-        if 'qname' in options['qinfo']:
-            sub_cmd.extend(['-q', options['qinfo']['qname']])
     elif gtpar.server['submitter'] == 'slurm':
         gtcmd.build_sbatch_head(cmdfobj, options['jobname'], nprocs, mem,
                                 jobwtime=wtime, jobemail=options['mailto'],

@@ -58,6 +58,8 @@ def build_qsub_head(out: tp.Optional[tp.TextIO] = None,
         subcmd += f'#PBS -m abe -M {jobemail}\n'
     if 'group' in extraopts:
         subcmd += f'#PBS -W group-list={extraopts["group"]}\n'
+    if 'qname' in extraopts:
+        subcmd += f'#PBS -q {extraopts["qname"]}'
 
     subcmd += '''
 # Store special variable for summary

@@ -10,31 +10,14 @@ import argparse
 import typing as tp
 from configparser import ConfigParser
 
+from gxxtools.data import GXX_ARCH_FLAGS
 import gxxtools.params as gtpar
 import gxxtools.parse_ini as gtini
 
 
 #  Gaussian-related definitions
 # -----------------------------
-# Equivalency between procs archs and Gaussian mach dirs
-# machine arch as defined in HPC ini file -> Macs in Gxx ini file.
-# This depends on the naming convention adopted on each cluster
-_GXX_ARCHS = {
-    'nehalem': 'intel64-nehalem',
-    'westmere': 'intel64-nehalem',
-    'sandybridge': 'intel64-sandybridge',
-    'ivybridge': 'intel64-sandybridge',
-    'skylake': 'intel64-haswell',
-    'cascadelake': 'intel64-haswell',
-    'bulldozer': 'amd64-istanbul',
-    'naples': 'intel64-haswell',
-    'rome': 'intel64-haswell',
-    'milan': 'intel64-haswell',
-    'zen1': 'intel64-haswell',
-    'zen2': 'intel64-haswell',
-    'zen3': 'intel64-haswell',
-}
-# By default, Gxx_QSub allows unsupported workings (workings not listed in
+# By default, Gxx_Sub allows unsupported workings (workings not listed in
 #   the section of Gaussian versions).  If set False, only workings listed
 #   in `Workings` are allowed.
 _ANY_WORKING = True
@@ -553,7 +536,7 @@ def get_gxx_spec(opts: argparse.Namespace) -> tp.Tuple[str, str, str]:
     def get_gxx_arch() -> str:
         """Return the compatible GXX architecture."""
         try:
-            gxx_arch = _GXX_ARCHS[gtpar.node_family.cpu_arch]
+            gxx_arch = GXX_ARCH_FLAGS[gtpar.node_family.cpu_arch]
         except KeyError:
             print('INTERNAL ERROR: Unsupported hardware architecture.')
             sys.exit(9)

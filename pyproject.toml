@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gxxtools"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
     "hpcnodes @ git+https://github.com/jbloino/hpcnodes.git",
 ]
@@ -30,6 +30,7 @@ classifiers = [
 
 [project.scripts]
 gxx_sub = "gxxtools.sub:main"
+gxx_build = "gxxtools.build_cluster:main"
 
 [project.urls]
 Repository = "https://github.com/jbloino/gxxtools.git"

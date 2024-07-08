@@ -10,7 +10,8 @@ def build_qsub_head(out: tp.Optional[tp.TextIO] = None,
                     jobmem: str = '16GB',
                     jobwtime: str = '',
                     jobemail: str = '',
-                    extraopts: tp.Optional[tp.Dict[str, str]] = None
+                    extraopts: tp.Optional[tp.Dict[str, str]] = None,
+                    shell: str = 'bash'
                     ) -> tp.Optional[str]:
     """Build QSub script.
 
@@ -33,6 +34,8 @@ def build_qsub_head(out: tp.Optional[tp.TextIO] = None,
         Email address to send job notifications.
     extraopts
         Dictionary with extra options to pass to the submitter.
+    shell
+        Write the commands for a specific kind of shell.
 
     Returns
     -------
@@ -47,7 +50,7 @@ def build_qsub_head(out: tp.Optional[tp.TextIO] = None,
     if 'diskmem' in extraopts:
         extra_res += f':scratch_local={extraopts["diskmem"]}'
 
-    subcmd = f"""#!/bin/bash
+    subcmd = f"""#!/bin/{shell}
 
 #PBS -N {jobtitle}
 #PBS -l select=1:ncpus={jobncpus}:mem={jobmem}{extra_res}
@@ -61,13 +64,24 @@ def build_qsub_head(out: tp.Optional[tp.TextIO] = None,
     if 'qname' in extraopts:
         subcmd += f'#PBS -q {extraopts["qname"]}'
 
-    subcmd += '''
+    if shell.lower() in ('bash', 'sh', 'zsh'):
+        subcmd += '''
 # Store special variable for summary
 JOB_QUEUE=$PBS_O_QUEUE
 JOB_HOST=$PBS_O_HOST
 JOB_ID=$PBS_JOBID
 JOB_NAME=$PBS_JOBNAME
 '''
+    elif shell.lower() in ('csh', 'tcsh'):
+        subcmd += '''
+# Store special variable for summary
+set JOB_QUEUE = "$PBS_O_QUEUE"
+set JOB_HOST = "$PBS_O_HOST"
+set JOB_ID = "$PBS_JOBID"
+set JOB_NAME = "$PBS_JOBNAME"
+'''
+    else:
+        raise NameError('Unknown type of shell')
 
     if out is None:
         return subcmd

@@ -45,8 +45,8 @@ def build_qsub_head(out: tp.Optional[tp.TextIO] = None,
     extra_res = ''
     if 'host' in extraopts:
         extra_res += f':host={extraopts["host"]}'
-    if 'qname' in extraopts:
-        extra_res += f':Qlist={extraopts["qname"]}'
+    if 'qbase' in extraopts:
+        extra_res += f':Qlist={extraopts["qbase"]}'
     if 'diskmem' in extraopts:
         extra_res += f':scratch_local={extraopts["diskmem"]}'
 

@@ -142,6 +142,8 @@ def build_sbatch_head(out: tp.Optional[tp.TextIO] = None,
         subcmd += f'#SBATCH --time={jobwtime}\n'
     if 'host' in extraopts:
         subcmd += f'#SBATCH --nodelist={extraopts["host"]}\n'
+    if 'reservation' in extraopts:
+        subcmd += f'#SBATCH --reservation={extraopts["reservation"]}\n'
     subcmd += '#SBATCH --exclusive\n'
     if jobemail.strip():
         subcmd += f"""\

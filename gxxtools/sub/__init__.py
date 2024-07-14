@@ -53,8 +53,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('infile', help="Gaussian input file(s)", nargs='*')
     #  OPTIONS
     # ---------
-    # Qsub-related options
-    # ^^^^^^^^^^^^^^^^^^^^
+    # submitter-related options
+    # ^^^^^^^^^^^^^^^^^^^^^^^^^
     queue = parser.add_argument_group('queue-related options')
     queue.add_argument(
         '-j', '--job', dest='job',
@@ -82,6 +82,8 @@ def build_parser() -> argparse.ArgumentParser:
             '-q', '--queue', dest='queue', default=gthpc.queues_default(),
             help=f'Sets the queue type.\n{doc_queues}',
             metavar='QUEUE')
+    queue.add_argument('--reservation',
+                       help='Specifies reserved resources.')
     queue.add_argument(
         '-S', '--silent', dest='silent', action='store_true',
         help='''\
@@ -232,6 +234,8 @@ def parse_options(parser: argparse.ArgumentParser,
         print('ERROR: Wrong virtual queue specification')
         print(f'Reason: {err}')
         sys.exit(2)
+    if argopts.reservation is not None:
+        options['qinfo']['reservation'] = argopts.reservation
     # Gaussian specifications
     # ^^^^^^^^^^^^^^^^^^^^^^^
     options['gxx'], options['gxx_cmds'], options['gxx_exedir'] = \

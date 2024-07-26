@@ -812,10 +812,12 @@ mk
             'qname': sorted(mach_data[arch][0].supported_queues)[0]
         }
         if gtpar.server['submitter'] == 'qsub':
-            sub_cmds = gtcmd.build_qsub_head(jobtitle=jobname, extraopts=extra)
+            sub_cmds = gtcmd.build_qsub_head(jobtitle=jobname, extraopts=extra,
+                                             shell='tcsh')
             sub_exe = 'qsub'
         elif gtpar.server['submitter'] == 'slurm':
-            sub_cmds = gtcmd.build_qsub_head(jobtitle=jobname, extraopts=extra)
+            sub_cmds = gtcmd.build_qsub_head(jobtitle=jobname, extraopts=extra,
+                                             shell='tcsh')
             sub_exe = 'sbatch'
         else:
             sub_exe = None  # Trick to have sub_exe technically always defined.

@@ -177,7 +177,8 @@ def build_bash_cmd(out: tp.TextIO,
                    parallel: bool,
                    cmdcpto: str = '',
                    cmdcpfrom: str = '',
-                   cmdrmtemp: tp.Optional[str] = None
+                   cmdrmtemp: tp.Optional[str] = None,
+                   lift_ulim: bool = True
                    ):
     """Build pure BASH/shell cmds for the submiiter.
 
@@ -212,6 +213,10 @@ def build_bash_cmd(out: tp.TextIO,
         Additional commands to copy file *from* temp. directory.
     cmdrmtemp:
         Command to delete temporary directory (only if non-standard).
+    lift_ulim:
+        Remove the cache limit of the OS.
+        By default it is removed since some features of Gaussian (e.g.,
+          modelA/modelB) do not work with the cache limit.
     """
     runcmd = f"""
 # WORKDIR: work directory from head node
@@ -267,6 +272,11 @@ cd $TEMPDIR
 {{
 {cmdcpto}
 }} || {{ echo >&2 "Error while copying input file(s)!"; exit 2; }}
+'''
+    if lift_ulim:
+        runcmd += '''
+# Remove stack protection to prevent Gaussian to segfault in some cases.
+ulim -s unlimited
 '''
 
     endline = ' &' if parallel else ''

@@ -651,7 +651,7 @@ def get_gxx_spec(opts: argparse.Namespace) -> tp.Tuple[str, str, str]:
         gxx_exedir = ' -exedir='
         for gxxwork in gxxworks:
             gxx_exedir += f'{gxxwork}/l1:{gxxwork}/exe-dir:'
-        gxx_exedir += ' $GAUSS_EXEDIR'
+        gxx_exedir += '$GAUSS_EXEDIR'
 
     return gver_info['gxx'], '\n'.join(env_cmds), gxx_exedir
 

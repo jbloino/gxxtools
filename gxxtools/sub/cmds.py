@@ -276,7 +276,7 @@ cd $TEMPDIR
     if lift_ulim:
         runcmd += '''
 # Remove stack protection to prevent Gaussian to segfault in some cases.
-ulim -s unlimited
+ulimit -s unlimited
 '''
 
     endline = ' &' if parallel else ''

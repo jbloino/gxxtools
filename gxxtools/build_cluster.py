@@ -23,12 +23,12 @@ GXX_VERSIONS = ('gdv', 'g09', 'g16')
 
 #  Archives format
 # -----------------
-FMT_GXX = r'(g\w\w)\.?(\w\d\d[p+]?)'
+FMT_GXX = r'(g\w\w)\.?(\w\d\d(?:[p+](?:-\d{6,8})?)?)'
 FMT_EXT = r'(\.\w+|\.tar\.\w+)'
 FMT_GXXARCH = re.compile(r'^' + FMT_GXX + FMT_EXT + r'$')
 FMT_WORKING = re.compile(r'^working_' + FMT_GXX + r'_(\w{4}-?\w{2}-?\w{2})'
                          + FMT_EXT + '$')
-FMT_VERSION = re.compile(r'^(g\w\w|\w{3}).?(\w\d\d[p+]?)$')
+FMT_VERSION = re.compile(r'^(g\w\w|\w{3}).?(\w\d\d(?:[p+](?:-\d{6,8})?)?)$')
 
 
 # =============

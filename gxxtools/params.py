@@ -1,7 +1,15 @@
 """Store paths for gxxtools module."""
 import os
 
-home = os.getenv('HOME')
+
+class InitError(Exception):
+    """Handle Initialization Errors."""
+    def __init__(self, what: str):
+        msg = f'{what.capitalize()} has not been initialized.'
+        super().__init__(msg)
+
+
+home = os.getenv('HOME', '')
 user = os.getlogin()
 
 DEBUG = False
@@ -46,5 +54,7 @@ workings_def = None
 workings_info = None
 
 queues_info = None
+
+labels_info = None
 
 node_family = None

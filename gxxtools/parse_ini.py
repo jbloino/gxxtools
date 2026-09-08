@@ -13,11 +13,11 @@ _SEC_GXX = 'GAUSSIAN'
 _SEC_CFG = 'CONFIG'
 _SEC_ROOT = 'PATHS'
 _SEC_COMP = 'COMPILER'
-_SEC_QUEUE = 'QUEUE'
+_SEC_JOB = 'JOBRUN'
 _SEC_SRV = 'SERVER'
 
 
-def get_config(cfg_file: tp.Optional[str] = None) -> tp.Optional[ConfigParser]:
+def get_config(cfg_file: str | None = None) -> ConfigParser | None:
     """Return a ConfigParser instance.
 
     Returns an instance of ConfigParser() if a config file is found and
@@ -47,9 +47,9 @@ def get_config(cfg_file: tp.Optional[str] = None) -> tp.Optional[ConfigParser]:
 
 
 def get_path(what: str,
-             cfg_file: tp.Optional[str] = None,
+             cfg_file: str | None = None,
              full_path: bool = True,
-             miss_ok: bool = True) -> str:
+             miss_ok: bool = True) -> str | None:
     """Get/build file path.
 
     Constructs the path with information from `cfg_file` or global
@@ -81,8 +81,9 @@ def get_path(what: str,
     ValueError
         Missing information in config file.
     """
-    def build_path(path: tp.Optional[str] = None,
-                   file: tp.Optional[str] = None) -> tp.Optional[str]:
+    def build_path(config: ConfigParser,
+                   path: str | None = None,
+                   file: str | None = None) -> str | None:
         """Build path from config file and path information."""
         if file is not None:
             if _SEC_CFG not in config.sections():
@@ -96,12 +97,13 @@ def get_path(what: str,
             # check if file corresponds to an actual path
             # we will check that there is at least one path separator and
             # the path exists.
-            if not full_path or (miss_ok and fname is None):
+            if not full_path or fname is None:
                 res = fname
             elif os.sep in fname and os.path.exists(fname):
                 res = os.path.abspath(fname)
             else:
-                root = config.get(_SEC_ROOT, path, fallback=None)
+                _path = '' if path is None else path
+                root = config.get(_SEC_ROOT, _path, fallback=None)
                 if root is not None:
                     res = os.path.join(root, fname)
                 else:
@@ -112,7 +114,8 @@ def get_path(what: str,
                 if miss_ok:
                     return None
                 raise ValueError(f'Missing [{_SEC_ROOT}] section')
-            root = config.get(_SEC_ROOT, path, fallback=None)
+            _path = '' if path is None else path
+            root = config.get(_SEC_ROOT, _path, fallback=None)
             if root is None:
                 if not miss_ok:
                     raise ValueError(f'Missing option "{path}"')
@@ -122,7 +125,7 @@ def get_path(what: str,
     if config is None:
         raise FileNotFoundError('Configuration file is missing.')
 
-    info = {'path': None, 'file': None}
+    info: dict[str, str | None] = {'path': None, 'file': None}
 
     if what.lower() in ('hpcnodes', 'hpcconfig', 'hpcfile'):
         if full_path:
@@ -147,11 +150,11 @@ def get_path(what: str,
     else:
         raise KeyError('Unsupported quantity')
 
-    return build_path(**info)
+    return build_path(config, **info)
 
 
-def gxx_build_archs(cfg_file: tp.Optional[str] = None,
-                    miss_ok: bool = True) -> tp.Dict[str, str]:
+def gxx_build_archs(cfg_file: str | None = None,
+                    miss_ok: bool = True) -> dict[str, str]:
     """Return the build architectures for Gaussian.
 
     Constructs a dictionary of the build dictionary as,
@@ -204,8 +207,8 @@ ex: intel64-haswell | verne'''
     return arch_data if arch_data else None
 
 
-def gxx_info(what: str, cfg_file: tp.Optional[str] = None
-             ) -> tp.Optional[tp.Union[str, bool]]:
+def gxx_info(what: str, cfg_file: str | None = None
+             ) -> str | bool | None:
     """Return Gaussian-related data.
 
     Returns the Gaussian-related data corresponding to `what` from the
@@ -252,79 +255,8 @@ def gxx_info(what: str, cfg_file: tp.Optional[str] = None
     return res
 
 
-def sub_info(what: str, cfg_file: tp.Optional[str] = None) -> tp.Any:
-    """Return queue/submission-related data.
-
-    Returns the queue-related information corresponding to `what` from
-    the configuration file.
-
-    Parameters
-    ----------
-    what
-        Information of interest.
-    cfg_file
-        Configuration file.
-        If None, CONFIG_FILE is used.
-
-    Returns
-    -------
-    any
-        Relevant information.
-
-    Raises
-    ------
-    FileNotFoundError
-        Missing configuration file.
-    KeyError
-        Value of `what` is unknown.
-    ValueError
-        Missing information in config file.
-    """
-    config = get_config(cfg_file)
-    if config is None:
-        raise FileNotFoundError('Configuration file is missing.')
-
-    query = what.lower()
-    if query in ('default', 'queue'):
-        res = config.get(_SEC_QUEUE, 'default', fallback=None)
-        if res is None:
-            raise ValueError('Missing default Gaussian version')
-    elif query in ('manual', 'nodes'):
-        res = config.getboolean(_SEC_QUEUE, 'manual', fallback=True)
-    elif query in ('walltime', 'wtime'):
-        wtime = config.getboolean(_SEC_QUEUE, 'walltime', fallback=False)
-        if wtime:
-            val = config.get(_SEC_QUEUE, 'default_wtime', fallback=None)
-            if val is not None:
-                res = val
-            else:
-                val = config.get(_SEC_QUEUE, 'qtype_to_wtime', fallback=None)
-                if val is not None:
-                    vals = {}
-                    for item in val.split(','):
-                        try:
-                            qtype, tlen = item.split(':', maxsplit=1)
-                        except ValueError:
-                            print('Wrong format for qtype_to_wtime')
-                            print('expected: "qtype: wallime"')
-                            sys.exit(100)
-                        if qtype.strip().lower() == 'none':
-                            vals[''] = tlen.strip()
-                        else:
-                            vals[qtype.strip()] = tlen.strip()
-                    res = vals.copy()
-                else:
-                    res = True
-        else:
-            res = False
-    else:
-        raise KeyError('Unrecognized queue information')
-
-    return res
-
-
-def srv_info(what: str, cfg_file: tp.Optional[str] = None
-             ) -> tp.Optional[tp.Union[str, bool]]:
+def srv_info(what: str, cfg_file: str | None = None
+             ) -> str | bool | None:
     """Return server-related data.
 
     Returns the server-related data corresponding to `what` from the
@@ -352,15 +284,21 @@ def srv_info(what: str, cfg_file: tp.Optional[str] = None
     ValueError
         Missing information in config file.
     """
+    _alias_queues = ('queues', )
+    _alias_central = ('dispatch', 'noqueues', 'central')
+    _alias_labels = ('properties', 'labels', 'resources')
+    _alias_mixed = ('mixed', 'hybrid')
     config = get_config(cfg_file)
     if config is None:
         raise FileNotFoundError('Configuration file is missing.')
 
     query = what.lower()
     if query == 'alias':
-        res = config.get(_SEC_SRV, 'alias', fallback=None).lower()
+        res = config.get(_SEC_SRV, 'alias', fallback=None)
         if res is None:
             raise ValueError('Missing server alias')
+        else:
+            res = res.lower()
     elif query == 'email':
         res = config.get(_SEC_SRV, 'email', fallback=None)
     elif query in ('submitter', 'sub', 'job', 'qsub', 'slurm'):
@@ -371,15 +309,25 @@ def srv_info(what: str, cfg_file: tp.Optional[str] = None
             res = res == 'qsub'
         elif query == 'slurm':
             res = res == 'slurm'
-    elif query in ('jobtype', 'srvtype', 'servertype', 'queues', 'noqueues',
-                   'dispatch', 'central'):
-        res = config.get(_SEC_SRV, 'jobtype', fallback='queues').lower()
-        if res not in ('central', 'queues'):
-            raise ValueError('Unsupported type of job submission.')
-        if query == 'queues':
-            res = res == 'queues'
-        elif query in ('noqueues', 'dispatch', 'central'):
-            res = res == 'central'
+    elif query in ('jobtype', 'srvtype', 'servertype'):
+        value = config.get(_SEC_SRV, 'jobtype', fallback='queues').lower()
+        if value in _alias_queues:
+            res = 'queues'
+        elif value in _alias_central:
+            res = 'central'
+        elif value in _alias_labels:
+            res = 'labels'
+        elif value in _alias_mixed:
+            res = 'mixed'
+        else:
+            raise ValueError('Unsupported type of job submission')
+    elif query in (_alias_queues + _alias_central + _alias_labels
+                   + _alias_mixed):
+        value = config.get(_SEC_SRV, 'jobtype', fallback='queues').lower()
+        res = (value == query or {value, query} <= set(_alias_queues)
+               or {value, query} <= set(_alias_central)
+               or {value, query} <= set(_alias_labels)
+               or {value, query} <= set(_alias_mixed))
     elif query in ('local', 'runlocal', 'localrun'):
         res = config.getboolean(_SEC_SRV, 'localrun', fallback=False)
     elif query in ('clean', 'cleancmd', 'cleanscratch', 'rmscratch'):
@@ -393,8 +341,8 @@ def srv_info(what: str, cfg_file: tp.Optional[str] = None
     return res
 
 
-def get_info(what: str, cfg_file: tp.Optional[str] = None
-             ) -> tp.Union[str, bool]:
+def get_info(what: str, cfg_file: str | None = None
+             ) -> dict[str, str] | str | bool | None:
     """Return information for `what`.
 
     Returns the information corresponding to `what` from the
@@ -426,22 +374,61 @@ def get_info(what: str, cfg_file: tp.Optional[str] = None
     if config is None:
         raise FileNotFoundError('Configuration file is missing.')
 
-    if what.lower() in ('compiler', 'compname'):
-        res = config.get(_SEC_COMP, 'name', fallback=None)
-        if res is None:
-            raise ValueError('Missing name of the compiler')
-    elif what.lower() == 'set_compiler':
-        res = config.getboolean(_SEC_COMP, 'set_env', fallback=False)
-    elif what.lower() in ('queue', 'default_queue'):
-        res = config.get(_SEC_QUEUE, 'default', fallback=None)
-    elif what.lower() in ('queues_avail'):
-        res = config.getboolean(_SEC_QUEUE, 'manual', fallback=True)
-    elif what.lower() in ('walltime_needed'):
-        res = config.getboolean(_SEC_QUEUE, 'walltime', fallback=False)
-    elif what.lower() in ('walltime_default', 'walltime'):
-        res = config.get(_SEC_QUEUE, 'default_wtime', fallback=None)
-    else:
-        raise KeyError('Unrecognized information')
+    srv_type = srv_info('jobtype')
+
+    res = None
+
+    match what.lower():
+        case 'compiler' | 'compname':
+            res = config.get(_SEC_COMP, 'name', fallback=None)
+            if res is None:
+                raise ValueError('Missing name of the compiler')
+        case 'set_compiler':
+            res = config.getboolean(_SEC_COMP, 'set_env', fallback=False)
+        case 'queue' | 'default_queue':
+            def_queue = config.get(_SEC_JOB, 'queue', fallback=None)
+            if def_queue is None:
+                if srv_type in ('mixed', 'queues'):
+                    def_queue = config.get(_SEC_JOB, 'default', fallback=None)
+            res = def_queue
+        case 'label' | 'default_label':
+            def_label = config.get(_SEC_JOB, 'label', fallback=None)
+            if def_label is None:
+                if srv_type in ('mixed', 'labels'):
+                    def_label = config.get(_SEC_JOB, 'default', fallback=None)
+            res = def_label
+        case 'queues_avail' | 'manual' | 'nodes':
+            res = config.getboolean(_SEC_JOB, 'manual', fallback=True)
+        case 'walltime_needed':
+            res = config.getboolean(_SEC_JOB, 'walltime', fallback=False)
+        case 'walltime_default' | 'walltime' | 'wtime':
+            wtime = config.getboolean(_SEC_JOB, 'walltime', fallback=False)
+            if wtime:
+                val = config.get(_SEC_JOB, 'default_wtime', fallback=None)
+                if val is not None:
+                    res = val
+                else:
+                    val = config.get(_SEC_JOB, 'qtype_to_wtime', fallback=None)
+                    if val is not None:
+                        vals = {}
+                        for item in val.split(','):
+                            try:
+                                qtype, tlen = item.split(':', maxsplit=1)
+                            except ValueError:
+                                print('Wrong format for qtype_to_wtime')
+                                print('expected: "qtype: wallime"')
+                                sys.exit(100)
+                            if qtype.strip().lower() == 'none':
+                                vals[''] = tlen.strip()
+                            else:
+                                vals[qtype.strip()] = tlen.strip()
+                        res = vals.copy()
+                    else:
+                        res = True
+            else:
+                res = False
+        case _:
+            raise KeyError('Unrecognized information')
 
     return res
 

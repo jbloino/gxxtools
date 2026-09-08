@@ -1,18 +1,19 @@
 """Build submitted commands."""
 
 import os
+from collections.abc import Sequence
 import typing as tp
 
 
-def build_qsub_head(out: tp.Optional[tp.TextIO] = None,
+def build_qsub_head(out: tp.TextIO | None = None,
                     jobtitle: str = 'generic',
                     jobncpus: int = 1,
                     jobmem: str = '16GB',
                     jobwtime: str = '',
                     jobemail: str = '',
-                    extraopts: tp.Optional[tp.Dict[str, str]] = None,
+                    extraopts: dict[str, str] | None = None,
                     shell: str = 'bash'
-                    ) -> tp.Optional[str]:
+                    ) -> str | None:
     """Build QSub script.
 
     Builds a script to be run by a PBS-compatible job submitter.
@@ -43,12 +44,15 @@ def build_qsub_head(out: tp.Optional[tp.TextIO] = None,
         list of submitter commands if `out` is None.
     """
     extra_res = ''
-    if 'host' in extraopts:
-        extra_res += f':host={extraopts["host"]}'
-    if 'qbase' in extraopts:
-        extra_res += f':Qlist={extraopts["qbase"]}'
-    if 'diskmem' in extraopts:
-        extra_res += f':scratch_local={extraopts["diskmem"]}'
+    _extra_opts = {} if extraopts is None else extraopts
+    if 'host' in _extra_opts:
+        extra_res += f':host={_extra_opts["host"]}'
+    if 'qbase' in _extra_opts:
+        extra_res += f':Qlist={_extra_opts["qbase"]}'
+    if 'diskmem' in _extra_opts:
+        extra_res += f':scratch_local={_extra_opts["diskmem"]}'
+    if 'hwtag' in _extra_opts:
+        extra_res += f':{_extra_opts["hwtag"]}'
 
     subcmd = f"""#!/bin/{shell}
 
@@ -59,10 +63,10 @@ def build_qsub_head(out: tp.Optional[tp.TextIO] = None,
         subcmd += f'#PBS -l walltime={jobwtime}\n'
     if jobemail.strip():
         subcmd += f'#PBS -m abe -M {jobemail}\n'
-    if 'group' in extraopts:
-        subcmd += f'#PBS -W group-list={extraopts["group"]}\n'
-    if 'qname' in extraopts:
-        subcmd += f'#PBS -q {extraopts["qname"]}'
+    if 'group' in _extra_opts:
+        subcmd += f'#PBS -W group-list={_extra_opts["group"]}\n'
+    if 'qname' in _extra_opts:
+        subcmd += f'#PBS -q {_extra_opts["qname"]}'
 
     if shell.lower() in ('bash', 'sh', 'zsh'):
         subcmd += '''
@@ -89,14 +93,14 @@ set JOB_NAME = "$PBS_JOBNAME"
         print(subcmd, file=out)
 
 
-def build_sbatch_head(out: tp.Optional[tp.TextIO] = None,
+def build_sbatch_head(out: tp.TextIO | None = None,
                       jobtitle: str = 'generic',
                       jobncpus: int = 1,
                       jobmem: str = '16GB',
                       jobwtime: str = '',
                       jobemail: str = '',
-                      extraopts: tp.Optional[tp.Dict[str, str]] = None
-                      ) -> tp.Optional[str]:
+                      extraopts: dict[str, str] | None = None
+                      ) -> str | None:
     """Build script for SLURM.
 
     Builds a script to be run by a SLURM-compatible job submitter.
@@ -129,6 +133,7 @@ def build_sbatch_head(out: tp.Optional[tp.TextIO] = None,
     Some recommend for SMP jobs: --nodes=1, --ntasks=1, --cpus-per-tasks=N
     It may have to be tested.
     """
+    _extra_opts = {} if extraopts is None else extraopts
     subcmd = f"""#!/bin/bash
 
 #SBATCH --job-name {jobtitle}
@@ -136,14 +141,16 @@ def build_sbatch_head(out: tp.Optional[tp.TextIO] = None,
 #SBATCH --ntasks-per-node={jobncpus}
 #SBATCH --mem={jobmem}
 """
-    if 'qname' in extraopts:
-        subcmd += f'#SBATCH --partition={extraopts["qname"]}\n'
+    if 'qname' in _extra_opts:
+        subcmd += f'#SBATCH --partition={_extra_opts["qname"]}\n'
+    elif 'hwtag' in _extra_opts:
+        subcmd += f'#SBATCH --constraint={_extra_opts["hwtag"]}\n'
     if jobwtime.strip():
         subcmd += f'#SBATCH --time={jobwtime}\n'
-    if 'host' in extraopts:
-        subcmd += f'#SBATCH --nodelist={extraopts["host"]}\n'
-    if 'reservation' in extraopts:
-        subcmd += f'#SBATCH --reservation={extraopts["reservation"]}\n'
+    if 'host' in _extra_opts:
+        subcmd += f'#SBATCH --nodelist={_extra_opts["host"]}\n'
+    if 'reservation' in _extra_opts:
+        subcmd += f'#SBATCH --reservation={_extra_opts["reservation"]}\n'
     subcmd += '#SBATCH --exclusive\n'
     if jobemail.strip():
         subcmd += f"""\
@@ -166,8 +173,8 @@ JOB_NAME=$SLURM_JOB_NAME
 
 
 def build_bash_cmd(out: tp.TextIO,
-                   ginfiles: tp.Sequence[str],
-                   logfiles: tp.Sequence[str],
+                   ginfiles: Sequence[str],
+                   logfiles: Sequence[str],
                    gxxenv: str,
                    gxxargs: str,
                    gxx: str,
@@ -177,7 +184,7 @@ def build_bash_cmd(out: tp.TextIO,
                    parallel: bool,
                    cmdcpto: str = '',
                    cmdcpfrom: str = '',
-                   cmdrmtemp: tp.Optional[str] = None,
+                   cmdrmtemp: str | None = None,
                    lift_ulim: bool = True
                    ):
     """Build pure BASH/shell cmds for the submiiter.

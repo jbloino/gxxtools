@@ -650,7 +650,8 @@ def main():
     # Load HPC nodes/queue structure
     # ------------------------------
     gtpar.nodes_info = hpc.parse_ini(gtpar.paths['hpcini'])
-    gtpar.queues_info = hpc.list_queues_nodes(gtpar.nodes_info)
+    gtpar.queues_info = hpc.list_all_queues(gtpar.nodes_info)
+    gtpar.labels_info = hpc.list_all_labels(gtpar.nodes_info)
 
     # Initialize scripts templates
     # ----------------------------

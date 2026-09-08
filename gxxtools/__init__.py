@@ -18,10 +18,10 @@ _ALT_RC_PATH = os.path.join(gtpar.home, f'.{_RC_FILE}')
 def load_rc(server: tp.Optional[str] = None,
             rcfile: tp.Optional[str] = None):
     """Initialize basic parameters for GxxTools.
-    
+
     server can be provided to override the default configuration,
     typically for debugging purposes.
-    
+
     Parameters
     ----------
     server

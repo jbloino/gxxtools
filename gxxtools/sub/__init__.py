@@ -47,6 +47,7 @@ def build_parser() -> argparse.ArgumentParser:
     # Help documentation
     # ------------------
     doc_queues = gthpc.parser_doc_queues()
+    doc_labels = gthpc.parser_doc_labels()
     doc_gaussian = gtgxx.parser_doc_gaussian()
     #  MANDATORY ARGUMENTS
     # ---------------------
@@ -82,6 +83,12 @@ def build_parser() -> argparse.ArgumentParser:
             '-q', '--queue', dest='queue', default=gthpc.queues_default(),
             help=f'Sets the queue type.\n{doc_queues}',
             metavar='QUEUE')
+    if doc_labels is not None:
+        queue.add_argument(
+            '-r', '--resource', dest='resource',
+            default=gthpc.labels_default(),
+            help=f'Sets the resource.\n{doc_labels}',
+            metavar='LABEL')
     queue.add_argument('--reservation',
                        help='Specifies reserved resources.')
     queue.add_argument(
@@ -147,7 +154,7 @@ The possible options are:
         '-o', '--out', dest='gxxlog', metavar='LOG_FILENAME',
         help='Sets the output filename')
     gaussian.add_argument(
-        '-r', '--rwf', dest='gxxrwf', metavar='RWF_FILENAME',
+        '--rwf', dest='gxxrwf', metavar='RWF_FILENAME',
         help='''\
 Sets the read-write filename (Expert use!).
 "auto" sets automatically the rwf from the input filename.''')
@@ -225,7 +232,7 @@ def parse_options(parser: argparse.ArgumentParser,
     # Queue/Architecture specifications
     # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     try:
-        options['qncpus'], options['qmem'], options['qinfo'], \
+        options['jobcpu'], options['jobmem'], options['jobinfo'], \
             options['tmpdir'] = gthpc.get_arch_spec(argopts, jobid=JOB_PID)
     except KeyError:
         print('ERROR: Unsupported queue')
@@ -235,7 +242,7 @@ def parse_options(parser: argparse.ArgumentParser,
         print(f'Reason: {err}')
         sys.exit(2)
     if argopts.reservation is not None:
-        options['qinfo']['reservation'] = argopts.reservation
+        options['jobinfo']['reservation'] = argopts.reservation
     # Gaussian specifications
     # ^^^^^^^^^^^^^^^^^^^^^^^
     options['gxx'], options['gxx_cmds'], options['gxx_exedir'] = \
@@ -363,21 +370,21 @@ def set_resources(options: tp.Dict[str, tp.Any]
     if {'p', 'proc', 'a', 'all'} & set(options['gxxlnk0']):
         nprocs = None
     elif options['n_input'] > 1 and options['multijob'] == 'parallel':
-        nprocs = options['qncpus']['base']//options['n_input']
+        nprocs = options['jobcpu']['base']//options['n_input']
         if nprocs == 0:
             msg = 'ERROR: Too many parallel jobs for the number of ' \
                 + 'processing units'
             raise ValueError(msg)
     else:
-        nprocs = options['qncpus']['base']
+        nprocs = options['jobcpu']['base']
     if {'m', 'mem', 'a', 'all'} & set(options['gxxlnk0']):
         mem = None
     else:
         if nprocs is None:
             factor = 1.
         else:
-            factor = min(1., nprocs/options['qncpus']['base'])
-        mem_byte = int(options['qmem']['base']*factor)
+            factor = min(1., nprocs/options['jobcpu']['base'])
+        mem_byte = int(options['jobmem']['base']*factor)
         mem = hpc.bytes_units(mem_byte, 0, False, 'g')
         if mem.startswith('0'):
             mem = hpc.bytes_units(mem_byte, 0, False, 'm')
@@ -745,23 +752,23 @@ def main():
         rootdirs.append(rootdir)
         gjf_files.append(gjf_new)
     if not options['expert']:
-        if full_P > options['qncpus']['base']:
+        if full_P > options['jobcpu']['base']:
             msg = f'''\
 ERROR: Too many processors required for the available resources.
-       {full_P} processing units requested for {options['qncpus']} available.\
+       {full_P} processing units requested for {options['jobcpu']} available.\
 '''
             print(msg)
             sys.exit(1)
-        if full_M > options['qmem']['base']:
+        if full_M > options['jobmem']['base']:
             print('ERROR: Requested memory exceeds available resources')
             sys.exit()
         nprocs = full_P
         mem = hpc.bytes_units(full_M, 0, False, 'g')
-    if (options['qncpus']['soft'] is not None and
-            nprocs > options['qncpus']['soft']):
+    if (options['jobcpu']['soft'] is not None and
+            nprocs > options['jobcpu']['soft']):
         print('NOTE: Number of processors exceeds soft limit.')
-    if (options['qmem']['soft'] is not None and
-            hpc.convert_storage(mem) > options['qmem']['soft']):
+    if (options['jobmem']['soft'] is not None and
+            hpc.convert_storage(mem) > options['jobmem']['soft']):
         print('NOTE: Requested memory exceeds soft limit.')
 
     # Generate transfer commands
@@ -796,7 +803,7 @@ ERROR: Too many processors required for the available resources.
     # Build Submitter job
     # -------------------
     run_parallel = multi_gjf and options['multijob'] == 'parallel'
-    wtime = options['qinfo'].get('walltime', '')
+    wtime = options['jobinfo'].get('walltime', '')
     if options['nojob'] or gtpar.DEBUG:
         cmdfobj = sys.stdout
     else:
@@ -806,12 +813,12 @@ ERROR: Too many processors required for the available resources.
     if gtpar.server['submitter'] == 'qsub':
         gtcmd.build_qsub_head(cmdfobj, options['jobname'], nprocs, mem,
                               jobwtime=wtime, jobemail=options['mailto'],
-                              extraopts=options['qinfo'])
+                              extraopts=options['jobinfo'])
         sub_cmd = ['qsub']
     elif gtpar.server['submitter'] == 'slurm':
         gtcmd.build_sbatch_head(cmdfobj, options['jobname'], nprocs, mem,
                                 jobwtime=wtime, jobemail=options['mailto'],
-                                extraopts=options['qinfo'])
+                                extraopts=options['jobinfo'])
         sub_cmd = ['sbatch']
     else:
         print('Unsupported submitter program')
